@@ -7,7 +7,7 @@ This is sample code associated with [DePaul SE452](http://www.cdm.depaul.edu/aca
 | Member | Area  | Saying |
 | ----------- | ----------- | --- |
 | Stephen | XXX | <i>D is for Diploma</i>
-| XXX | XXX  | <b>Carpe Diem</b>
+| Ibrahim | XXX  | <C> Captain </b>
 | XXX | XXX  | <b>Carpe Diem</b>
 | XXX | XXX  | <b>Carpe Diem</b>
 
