@@ -8,7 +8,7 @@ This is sample code associated with [DePaul SE452](http://www.cdm.depaul.edu/aca
 | ----------- | ----------- | --- |
 | Stephen | XXX | <i>D is for Diploma</i>
 | Ibrahim | XXX  | <C> C is for Captain </b>
-| XXX | XXX  | <b>Carpe Diem</b>
+| Pritiv | XXX  | <b>B for Bug </b>
 | XXX | XXX  | <b>Carpe Diem</b>
 
 <br/>
