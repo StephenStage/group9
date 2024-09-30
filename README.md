@@ -1,5 +1,5 @@
 ## Purpose
-This is sample code associated with [DePaul SE452](http://www.cdm.depaul.edu/academics/pages/courseinfo.aspx?Subject=SE&CatalogNbr=452) project sample using airline reservation as problem domain.
+Book library that allows for CRUD operations and checking out/in of individual books.
 <br>
 
 ## Project Members
