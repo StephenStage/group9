@@ -19,7 +19,7 @@ Winner of best of 2 out of 3 winner of virtual Rock paper scissor decision
 <br/>
 
 ## Communication Mechanism
-Will meet using Github.   Will meet once a week on Saturday.
+Will meet using Discord.   Will meet twice a week on Tuesday and Saturday.
 
 <br/>
 
