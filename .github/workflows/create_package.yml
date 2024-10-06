@@ -1,3 +1,5 @@
+# Creates .Jar file with version extracted from pom.xml
+
 name: Package Java Project
 
 on:
