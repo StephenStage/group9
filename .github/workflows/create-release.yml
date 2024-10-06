@@ -15,10 +15,10 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
 
     steps:
-      # Step 1: Check out the repository
+
       - uses: actions/checkout@v4
 
-      # Step 2: Set up JDK 21
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -26,52 +26,30 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Step 3: Build the project with Maven
+  
       - name: Package Application
         run: mvn -B clean package
 
-      # Step 4: Extract Version from pom.xml
+
       - name: Extract Version from pom.xml
         id: extract_version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -Ev '(^\[|Download\w+:)')
-          echo "Extracted version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # Step 5: Check if the release with the same tag exists
-      - name: Check if Release Exists
-        id: check_release
-        run: |
-          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }} \
-            | jq -r '.id // empty')
-          
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Release v${{ env.VERSION }} already exists. Incrementing version."
-            
-            # Increment patch version
-            NEW_VERSION=$(echo $VERSION | awk -F. -v OFS=. '{$NF += 1 ; print}')
-            echo "New version: v$NEW_VERSION"
-            echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          else
-            echo "No existing release for v${{ env.VERSION }}. Proceeding with current version."
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 6: Create GitHub Release
+  
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"  # Use either the original or incremented version
-          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "Release v${{ env.VERSION }}"
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 7: Find the JAR file dynamically
+ 
       - name: Find JAR File
         id: find_jar
         run: |
@@ -79,13 +57,13 @@ jobs:
           echo "Found JAR at: $JAR_PATH"
           echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
 
-      # Step 8: Upload the JAR file to the release
+ 
       - name: Upload Release
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}  # Use the upload URL from the release creation step
-          asset_path: ${{ env.JAR_PATH }}  # Dynamically found JAR file
-          asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.JAR_PATH }}
+          asset_name: d2l-mock-${{ env.VERSION }}.jar
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
