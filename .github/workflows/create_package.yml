@@ -26,7 +26,7 @@ jobs:
       - name: Package Application
         run: mvn -B clean package
 
-      # Optional: Upload the package (JAR or WAR)
+      # Upload the package
       - name: Upload Package
         uses: actions/upload-artifact@v3
         with:
