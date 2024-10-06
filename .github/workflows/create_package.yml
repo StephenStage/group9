@@ -1,7 +1,6 @@
 name: Package Java Project
 
 on:
-  # This workflow will only be triggered after the 'Java CI with Maven' workflow completes
   workflow_run:
     workflows: ["Java CI with Maven"]
     types:
@@ -12,9 +11,6 @@ jobs:
     name: Package Application After Successful Build
     runs-on: ubuntu-latest
 
-    # Ensure this job runs only if:
-    # - The event that triggered 'Java CI with Maven' was a push to the 'main' branch
-    # - The 'Java CI with Maven' workflow completed successfully
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
 
     steps:
@@ -34,5 +30,5 @@ jobs:
       - name: Upload Package
         uses: actions/upload-artifact@v3
         with:
-          name: my-package
+          name: d2l-mock
           path: target/*.jar
