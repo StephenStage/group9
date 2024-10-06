@@ -30,7 +30,7 @@ jobs:
         id: extract_version
         run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
-      # Create a GitHub Release using the extracted version
+ # Create a GitHub Release using the extracted version
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
@@ -39,6 +39,8 @@ jobs:
           release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GitHub token for authentication
 
       # Upload the packaged JAR or WAR to the release
       - name: Upload Release Asset
@@ -48,3 +50,5 @@ jobs:
           asset_path: target/*.jar  # Adjust this to match your packaged file (e.g., JAR or WAR)
           asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GitHub token for authentication
