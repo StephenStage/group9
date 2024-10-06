@@ -76,17 +76,28 @@ jobs:
           echo "Found JAR at: $JAR_PATH"
           echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
 
-      # Step 9: Upload the JAR file to the release (existing or newly created)
+      # Step 9: Set final upload URL for the asset
+      - name: Set Upload URL
+        run: |
+          if [ "${{ env.RELEASE_EXISTS }}" == "true" ]; then
+            echo "UPLOAD_URL=${{ env.RELEASE_URL }}" >> $GITHUB_ENV
+          else
+            echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
+          fi
+
+      # Step 10: Upload the JAR file to the release (existing or newly created)
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ env.RELEASE_URL || steps.create_release.outputs.upload_url }}
+          upload_url: ${{ env.UPLOAD_URL }}  # Use the dynamically set upload URL
           asset_path: ${{ env.JAR_PATH }}  # Use the dynamically found JAR file
           asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Debug: Output the release URL used for uploading
-      - name: Debug Release URL
-        run: echo "Uploading to URL: ${{ env.RELEASE_URL || steps.create_release.outputs.upload_url }}"
+      # Step 11: Debug: Output the upload URL used for uploading
+      - name: Debug Upload URL
+        id: debug
+        run: |
+          echo "Uploading to URL: ${{ env.UPLOAD_URL }}"
