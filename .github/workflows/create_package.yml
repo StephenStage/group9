@@ -8,9 +8,7 @@ on:
 
 jobs:
   package:
-    name: Package Application After Successful Build
     runs-on: ubuntu-latest
-
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
 
     steps:
@@ -26,9 +24,25 @@ jobs:
       - name: Package Application
         run: mvn -B clean package
 
-      # Upload the package
-      - name: Upload Package
-        uses: actions/upload-artifact@v3
+      - name: Extract Version from pom.xml
+        id: extract_version
+        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      # Create a GitHub Release using the extracted version
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
         with:
-          name: d2l-mock
-          path: target/*.jar
+          tag_name: "v${{ env.VERSION }}"  # Use the extracted version for the tag
+          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version
+          draft: false
+          prerelease: false
+
+      # Upload the packaged JAR or WAR to the release
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/*.jar  # Adjust this to match your packaged file (e.g., JAR or WAR)
+          asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
+          asset_content_type: application/java-archive
