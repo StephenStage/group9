@@ -47,7 +47,7 @@ jobs:
         run: |
           RELEASE_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }} \
-            | jq -r '.url // empty')
+            | jq -r '.upload_url // empty' | sed 's/{?name,label}//')
           if [ -n "$RELEASE_URL" ]; then
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
             echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
@@ -86,3 +86,7 @@ jobs:
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Debug: Output the release URL used for uploading
+      - name: Debug Release URL
+        run: echo "Uploading to URL: ${{ env.RELEASE_URL || steps.create_release.outputs.upload_url }}"
