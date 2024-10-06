@@ -43,6 +43,11 @@ jobs:
       # Upload the packaged JAR or WAR to the release
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
+
+      # Upload the package
+      - name: Upload Package
+        uses: actions/upload-artifact@v3
+
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: target/*.jar  # Adjust this to match your packaged file (e.g., JAR or WAR)
