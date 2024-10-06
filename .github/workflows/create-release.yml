@@ -1,4 +1,4 @@
-name: Package Java Project
+name: Package and Upload Project
 
 on:
   workflow_run:
@@ -30,55 +30,48 @@ jobs:
       - name: Package Application
         run: mvn -B clean package
 
-      # Step 4: List target directory contents to check if JAR is generated
-      - name: List target directory contents
-        run: ls -la target
-
-      # Step 5: Extract Version from pom.xml (without removing -SNAPSHOT)
+      # Step 4: Extract Version from pom.xml
       - name: Extract Version from pom.xml
         id: extract_version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -Ev '(^\[|Download\w+:)')
+          echo "Extracted version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # Step 6: Check if the release already exists and get the release ID
-      - name: Check if release exists
+      # Step 5: Check if the release with the same tag exists
+      - name: Check if Release Exists
         id: check_release
         run: |
           RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }} \
             | jq -r '.id // empty')
+          
           if [ -n "$RELEASE_ID" ]; then
-            echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
-            echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+            echo "Release v${{ env.VERSION }} already exists. Incrementing version."
+            
+            # Increment patch version
+            NEW_VERSION=$(echo $VERSION | awk -F. -v OFS=. '{$NF += 1 ; print}')
+            echo "New version: v$NEW_VERSION"
+            echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
           else
-            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+            echo "No existing release for v${{ env.VERSION }}. Proceeding with current version."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 7: Conditionally update the release if it exists, or create a new one
-      - name: Update or Create Release
-        if: ${{ env.RELEASE_EXISTS == 'true' }}
-        run: |
-          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"tag_name": "v'${{ env.VERSION }}'", "name": "Release v'${{ env.VERSION }}'", "draft": false, "prerelease": false}' \
-            https://api.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}
-
+      # Step 6: Create GitHub Release
       - name: Create GitHub Release
-        if: ${{ env.RELEASE_EXISTS == 'false' }}
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"  # Use the extracted version for the tag, including -SNAPSHOT
-          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version, including -SNAPSHOT
+          tag_name: "v${{ env.VERSION }}"  # Use either the original or incremented version
+          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 8: Find the JAR file dynamically
+      # Step 7: Find the JAR file dynamically
       - name: Find JAR File
         id: find_jar
         run: |
@@ -86,21 +79,12 @@ jobs:
           echo "Found JAR at: $JAR_PATH"
           echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
 
-      # Step 9: Set the correct upload URL based on whether the release was updated or created
-      - name: Set Upload URL
-        run: |
-          if [ "${{ env.RELEASE_EXISTS }}" == "true" ]; then
-            echo "UPLOAD_URL=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets?name=d2l-mock-${{ env.VERSION }}.jar" >> $GITHUB_ENV
-          else
-            echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
-          fi
-
-      # Step 10: Upload the JAR file to the release (new or updated)
-      - name: Upload Release Asset
+      # Step 8: Upload the JAR file to the release
+      - name: Upload Release
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ env.UPLOAD_URL }}  # Use the correct upload URL
-          asset_path: ${{ env.JAR_PATH }}  # Use the dynamically found JAR file
+          upload_url: ${{ steps.create_release.outputs.upload_url }}  # Use the upload URL from the release creation step
+          asset_path: ${{ env.JAR_PATH }}  # Dynamically found JAR file
           asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
         env:
