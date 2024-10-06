@@ -28,6 +28,7 @@ jobs:
         run: mvn -B package --file pom.xml
 
   test:
+    name: Run all tests
     needs: build
     runs-on: ubuntu-latest
 
