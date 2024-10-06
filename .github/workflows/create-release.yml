@@ -1,4 +1,4 @@
-name: Upload Release
+name: Package Java Project
 
 on:
   workflow_run:
@@ -45,12 +45,14 @@ jobs:
       - name: Check if release exists
         id: check_release
         run: |
-          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases | jq -r '.[] | select(.tag_name == "v${{ env.VERSION }}") | .id')
-          if [ -z "$RELEASE_ID" ]; then
-            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
-          else
+          RELEASE_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }} \
+            | jq -r '.url // empty')
+          if [ -n "$RELEASE_URL" ]; then
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
-            echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+            echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
+          else
+            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
           fi
 
       # Step 7: Conditionally create a new release if it doesn't exist
@@ -78,7 +80,7 @@ jobs:
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url || 'https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets?name=d2l-mock-${{ env.VERSION }}.jar' }}
+          upload_url: ${{ env.RELEASE_URL || steps.create_release.outputs.upload_url }}
           asset_path: ${{ env.JAR_PATH }}  # Use the dynamically found JAR file
           asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
