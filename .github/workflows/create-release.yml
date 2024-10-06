@@ -1,4 +1,4 @@
-name: Create Release
+name: Upload Release
 
 on:
   workflow_run:
@@ -15,10 +15,10 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
 
     steps:
-
+      # Step 1: Check out the repository
       - uses: actions/checkout@v4
 
-
+      # Step 2: Set up JDK 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -26,30 +26,22 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-
+      # Step 3: Build the project with Maven
       - name: Package Application
         run: mvn -B clean package
 
-
+      # Step 4: List target directory contents to check if JAR is generated
       - name: List target directory contents
         run: ls -la target
 
-
+      # Step 5: Extract Version from pom.xml (without removing -SNAPSHOT)
       - name: Extract Version from pom.xml
         id: extract_version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -Ev '(^\[|Download\w+:)')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-
-      - name: Find JAR File
-        id: find_jar
-        run: |
-          JAR_PATH=$(find target -name "*.jar" | head -n 1)
-          echo "Found JAR at: $JAR_PATH"
-          echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
-
-
+      # Step 6: Check if the release already exists
       - name: Check if release exists
         id: check_release
         run: |
@@ -61,26 +53,34 @@ jobs:
             echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
           fi
 
-
+      # Step 7: Conditionally create a new release if it doesn't exist
       - name: Create GitHub Release
         if: ${{ env.RELEASE_EXISTS == 'false' }}
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"
-          release_name: "Release v${{ env.VERSION }}"
+          tag_name: "v${{ env.VERSION }}"  # Use the extracted version for the tag, including -SNAPSHOT
+          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version, including -SNAPSHOT
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Step 8: Find the JAR file dynamically
+      - name: Find JAR File
+        id: find_jar
+        run: |
+          JAR_PATH=$(find target -name "*.jar" | head -n 1)
+          echo "Found JAR at: $JAR_PATH"
+          echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
 
+      # Step 9: Upload the JAR file to the release (existing or newly created)
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url || 'https://api.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets?name=d2l-mock-${{ env.VERSION }}.jar' }}
-          asset_path: ${{ env.JAR_PATH }}
-          asset_name: d2l-mock-${{ env.VERSION }}.jar
+          upload_url: ${{ steps.create_release.outputs.upload_url || 'https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets?name=d2l-mock-${{ env.VERSION }}.jar' }}
+          asset_path: ${{ env.JAR_PATH }}  # Use the dynamically found JAR file
+          asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
