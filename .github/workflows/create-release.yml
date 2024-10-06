@@ -34,13 +34,12 @@ jobs:
       - name: List target directory contents
         run: ls -la target
 
-      # Step 5: Extract Version from pom.xml
+      # Step 5: Extract Version from pom.xml (without removing -SNAPSHOT)
       - name: Extract Version from pom.xml
         id: extract_version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -Ev '(^\[|Download\w+:)')
-          VERSION=${VERSION%-SNAPSHOT}  # Strip the '-SNAPSHOT' suffix if present
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store the version in environment
 
       # Step 6: Find the JAR file dynamically
       - name: Find JAR File
@@ -48,19 +47,19 @@ jobs:
         run: |
           JAR_PATH=$(find target -name "*.jar" | head -n 1)
           echo "Found JAR at: $JAR_PATH"
-          echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
+          echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV  # Store the JAR path in environment
 
-      # Step 7: Create a GitHub Release using the extracted version
+      # Step 7: Create a GitHub Release using the extracted version (including -SNAPSHOT)
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"  # Use the extracted version for the tag
-          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version
+          tag_name: "v${{ env.VERSION }}"  # Use the extracted version for the tag, including -SNAPSHOT
+          release_name: "Release v${{ env.VERSION }}"  # Name the release based on the version, including -SNAPSHOT
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Provide GitHub token for authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 8: Upload the JAR file to the release
       - name: Upload Release Asset
@@ -71,4 +70,4 @@ jobs:
           asset_name: d2l-mock-${{ env.VERSION }}.jar  # Name the asset based on the version
           asset_content_type: application/java-archive
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Provide GitHub token for authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
